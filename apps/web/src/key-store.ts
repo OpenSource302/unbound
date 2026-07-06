@@ -2,6 +2,9 @@ import { bytesToHex, hexToBytes } from '@unbound/core';
 
 const STORAGE_PREFIX = 'unbound:v1:';
 const SESSION_USER = 'unbound:session_user';
+const SESSION_KEY = 'unbound:session_key';
+const REMEMBER_KEY = 'unbound:remember_key';
+const REMEMBER_PREF = 'unbound:remember_login';
 
 async function deriveKey(passcode: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
@@ -64,10 +67,11 @@ export async function saveAccount(
   username: string,
   secretKey: Uint8Array,
   passcode: string,
+  remember = true,
 ): Promise<void> {
   const encrypted = await encryptSecretKey(secretKey, passcode);
   localStorage.setItem(accountStorageKey(username), encrypted);
-  localStorage.setItem(SESSION_USER, username.toLowerCase());
+  saveLoginSession(secretKey, username, remember);
 }
 
 export async function loadAccount(
@@ -83,8 +87,53 @@ export function getSessionUsername(): string | null {
   return localStorage.getItem(SESSION_USER);
 }
 
+export function getRememberLogin(): boolean {
+  return localStorage.getItem(REMEMBER_PREF) !== '0';
+}
+
+export function saveLoginSession(
+  secretKey: Uint8Array,
+  username: string,
+  remember = true,
+): void {
+  const normalized = username.toLowerCase();
+  const hex = bytesToHex(secretKey);
+  localStorage.setItem(SESSION_USER, normalized);
+  sessionStorage.setItem(SESSION_KEY, hex);
+  localStorage.setItem(REMEMBER_PREF, remember ? '1' : '0');
+  if (remember) {
+    localStorage.setItem(REMEMBER_KEY, hex);
+  } else {
+    localStorage.removeItem(REMEMBER_KEY);
+  }
+}
+
+export interface RestoredSession {
+  username: string;
+  secretKey: Uint8Array;
+}
+
+/** Restore an active login from this browser (refresh or remembered session). */
+export function restoreLoginSession(): RestoredSession | null {
+  try {
+    const username = getSessionUsername();
+    if (!username || !hasLocalAccount(username)) return null;
+
+    const hex =
+      sessionStorage.getItem(SESSION_KEY) ?? localStorage.getItem(REMEMBER_KEY);
+    if (!hex) return null;
+
+    return { username, secretKey: hexToBytes(hex) };
+  } catch {
+    clearSession();
+    return null;
+  }
+}
+
 export function clearSession(): void {
   localStorage.removeItem(SESSION_USER);
+  localStorage.removeItem(REMEMBER_KEY);
+  sessionStorage.removeItem(SESSION_KEY);
 }
 
 export function hasLocalAccount(username: string): boolean {

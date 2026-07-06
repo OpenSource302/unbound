@@ -25,6 +25,8 @@ import {
   saveAccount,
   loadAccount,
   getSessionUsername,
+  getRememberLogin,
+  restoreLoginSession,
   clearSession,
   hasLocalAccount,
 } from './key-store';
@@ -82,13 +84,21 @@ function profileFor(pubkey: string, profiles: Map<string, UserProfile>): UserPro
 function AuthScreen({
   onAuthed,
 }: {
-  onAuthed: (key: Uint8Array, username: string, displayName: string) => void;
+  onAuthed: (
+    key: Uint8Array,
+    username: string,
+    displayName: string,
+    remember: boolean,
+  ) => void;
 }) {
-  const [mode, setMode] = useState<AuthMode>('signup');
-  const [username, setUsername] = useState('');
+  const savedUsername = getSessionUsername();
+  const hasSavedAccount = savedUsername ? hasLocalAccount(savedUsername) : false;
+  const [mode, setMode] = useState<AuthMode>(hasSavedAccount ? 'signin' : 'signup');
+  const [username, setUsername] = useState(savedUsername ?? '');
   const [passcode, setPasscode] = useState('');
   const [confirm, setConfirm] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [remember, setRemember] = useState(getRememberLogin());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -108,12 +118,12 @@ function AuthScreen({
         if (hasLocalAccount(u)) throw new Error(`@${u} already exists on this device`);
 
         const secretKey = generateSecretKey();
-        await saveAccount(u, secretKey, passcode);
-        onAuthed(secretKey, u, displayName.trim() || u);
+        await saveAccount(u, secretKey, passcode, remember);
+        onAuthed(secretKey, u, displayName.trim() || u, remember);
       } else {
         const secretKey = await loadAccount(u, passcode);
-        await saveAccount(u, secretKey, passcode);
-        onAuthed(secretKey, u, u);
+        await saveAccount(u, secretKey, passcode, remember);
+        onAuthed(secretKey, u, u, remember);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Authentication failed');
@@ -175,6 +185,14 @@ function AuthScreen({
               </div>
             </>
           )}
+          <label className="auth-remember">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            Stay signed in on this device
+          </label>
           <button className="auth-primary" onClick={submit} disabled={loading}>
             {loading ? '...' : mode === 'signup' ? 'Create account' : 'Sign in'}
           </button>
@@ -195,8 +213,13 @@ function AuthScreen({
 }
 
 export default function App() {
-  const [secretKey, setSecretKey] = useState<Uint8Array | null>(null);
-  const [username, setUsername] = useState<string | null>(getSessionUsername());
+  const restored = restoreLoginSession();
+  const [secretKey, setSecretKey] = useState<Uint8Array | null>(
+    restored?.secretKey ?? null,
+  );
+  const [username, setUsername] = useState<string | null>(
+    restored?.username ?? getSessionUsername(),
+  );
   const [page, setPage] = useState<Page>('home');
   const [feedTab, setFeedTab] = useState<'latest' | 'for-you' | 'following'>('latest');
   const [events, setEvents] = useState<NostrEvent[]>([]);
@@ -298,7 +321,7 @@ export default function App() {
   );
 
   const onAuthed = useCallback(
-    async (key: Uint8Array, user: string, name: string) => {
+    async (key: Uint8Array, user: string, name: string, _remember = true) => {
       const pub = getPublicKey(key);
       setSecretKey(key);
       setUsername(user);
