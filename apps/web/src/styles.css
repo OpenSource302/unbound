@@ -57,7 +57,14 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 8px;
 }
 
-.brand svg { width: 32px; height: 32px; fill: var(--text); }
+.brand svg { width: 32px; height: 32px; color: var(--text); flex-shrink: 0; }
+
+.brand-text {
+  font-size: 22px;
+  font-weight: 800;
+  margin-left: 10px;
+  letter-spacing: -0.02em;
+}
 
 .nav-item {
   display: flex;
@@ -191,9 +198,17 @@ a { color: inherit; text-decoration: none; }
 
 .compose-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
   padding: 0 16px 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.compose-error {
+  flex: 1;
+  font-size: 13px;
+  color: #f4212e;
 }
 
 .tweet-btn {
@@ -333,7 +348,16 @@ a { color: inherit; text-decoration: none; }
 
 .auth-box { max-width: 400px; width: 100%; }
 
-.auth-box h1 { font-size: 64px; font-weight: 700; margin-bottom: 48px; }
+.auth-box h1 { margin-bottom: 48px; }
+
+.auth-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
 .auth-box h2 { font-size: 31px; font-weight: 700; margin-bottom: 32px; }
 
 .field { margin-bottom: 20px; }

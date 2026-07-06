@@ -8,6 +8,7 @@ import {
   getPublicKey,
   rankHotPosts,
   homeTimeline,
+  latestTimeline,
   countEngagement,
   computeAlgoHash,
   KIND,
@@ -26,30 +27,21 @@ import {
   clearSession,
   hasLocalAccount,
 } from './key-store';
+import {
+  IconExplore,
+  IconHome,
+  IconLike,
+  IconLogo,
+  IconProfile,
+  IconRepost,
+  UnboundLogo,
+} from './icons';
 
-const DEFAULT_RELAYS = ['ws://127.0.0.1:7777', 'wss://relay.damus.io', 'wss://nos.lol'];
+const LOCAL_RELAY = 'ws://127.0.0.1:7777';
+const DEFAULT_RELAYS = [LOCAL_RELAY, 'wss://relay.damus.io', 'wss://nos.lol'];
 
 type Page = 'home' | 'explore' | 'profile';
 type AuthMode = 'signup' | 'signin';
-
-const IconHome = () => (
-  <svg viewBox="0 0 24 24"><path d="M12 9.5L7.5 14h9L12 9.5zM12 2L1 12h3v9h7v-6h2v6h7v-9h3L12 2z" /></svg>
-);
-const IconSearch = () => (
-  <svg viewBox="0 0 24 24"><path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904l4.96 4.96 1.06-1.06-4.96-4.96A6.456 6.456 0 0010.25 3.75zm-5 6.5c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5-5-2.24-5-5z" /></svg>
-);
-const IconUser = () => (
-  <svg viewBox="0 0 24 24"><path d="M5.651 19h12.698c-.337-2.374-2.017-4.36-4.45-5.1A6.5 6.5 0 0012 11.5a6.5 6.5 0 00-5.199 2.4c-2.433.74-4.113 2.726-4.45 5.1zM12 2a4.5 4.5 0 110 9 4.5 4.5 0 010-9z" /></svg>
-);
-const IconLike = () => (
-  <svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91z" /></svg>
-);
-const IconRepost = () => (
-  <svg viewBox="0 0 24 24"><path d="M4.75 3.79l4.603 4.3-1.706 1.82L6 8.38v7.37c0 .97.784 1.75 1.75 1.75H13V20H7.75A3.25 3.25 0 014.5 16.75V8.38L1.853 9.91.147 8.09l4.603-4.3zm11.5 2.71H11V4h5.25A3.25 3.25 0 0119.5 7.25v8.37l1.647-1.53 1.706 1.82-4.603 4.3-4.603-4.3 1.706-1.82L17 15.62V7.25c0-.97-.784-1.75-1.75-1.75z" /></svg>
-);
-const IconLogo = () => (
-  <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-);
 
 function timeAgo(ts: number): string {
   const s = Math.floor(Date.now() / 1000) - ts;
@@ -115,11 +107,14 @@ function AuthScreen({
   return (
     <div className="auth-page">
       <div className="auth-hero">
-        <IconLogo />
+        <UnboundLogo size={120} />
       </div>
       <div className="auth-form-col">
         <div className="auth-box">
-          <h1><IconLogo /></h1>
+          <h1 className="auth-wordmark">
+            <UnboundLogo size={36} />
+            <span>Unbound</span>
+          </h1>
           <h2>{mode === 'signup' ? 'Create your account' : 'Sign in to Unbound'}</h2>
           {error && <div className="auth-error">{error}</div>}
           <div className="field">
@@ -185,9 +180,11 @@ export default function App() {
   const [secretKey, setSecretKey] = useState<Uint8Array | null>(null);
   const [username, setUsername] = useState<string | null>(getSessionUsername());
   const [page, setPage] = useState<Page>('home');
-  const [feedTab, setFeedTab] = useState<'for-you' | 'following'>('for-you');
+  const [feedTab, setFeedTab] = useState<'latest' | 'for-you' | 'following'>('latest');
   const [events, setEvents] = useState<NostrEvent[]>([]);
   const [content, setContent] = useState('');
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState('');
   const [registered, setRegistered] = useState(false);
 
   const pubkey = useMemo(
@@ -250,24 +247,31 @@ export default function App() {
 
   const engagement = useMemo(() => countEngagement(events), [events]);
   const hotPosts = useMemo(() => rankHotPosts(ctx), [ctx]);
+  const latestPosts = useMemo(() => latestTimeline(ctx), [ctx]);
   const homePosts = useMemo(() => homeTimeline(ctx), [ctx]);
 
   const feedPosts = useMemo(() => {
-    if (page === 'explore' || feedTab === 'for-you') {
+    if (page === 'explore') {
+      return latestPosts;
+    }
+    if (feedTab === 'for-you') {
       const byId = new Map(events.map((e) => [e.id, e]));
       return hotPosts.map((r) => byId.get(r.eventId)).filter((e): e is NostrEvent => !!e);
     }
-    return homePosts;
-  }, [page, feedTab, hotPosts, homePosts, events]);
+    if (feedTab === 'following') {
+      return homePosts;
+    }
+    return latestPosts;
+  }, [page, feedTab, hotPosts, latestPosts, homePosts, events]);
 
   const publishRegistration = useCallback(
     async (key: Uint8Array, pub: string, user: string, name: string) => {
       const usernameEvt = await signEvent(buildUsernameEvent(pub, user), key);
       const profileEvt = await signEvent(buildProfileEvent(pub, user, name || user), key);
-      pool.publish(usernameEvt);
-      pool.publish(profileEvt);
+      const userResult = await pool.publish(usernameEvt, { relays: [LOCAL_RELAY] });
+      const profileResult = await pool.publish(profileEvt, { relays: [LOCAL_RELAY] });
       setEvents((prev) => [...prev, usernameEvt, profileEvt]);
-      setRegistered(true);
+      setRegistered(userResult.ok || profileResult.ok);
     },
     [pool],
   );
@@ -283,12 +287,24 @@ export default function App() {
   );
 
   const publishPost = useCallback(async () => {
-    if (!secretKey || !pubkey || !content.trim()) return;
-    const signed = await signEvent(buildPost(content.trim(), pubkey), secretKey);
-    pool.publish(signed);
-    setEvents((prev) => [...prev, signed]);
-    setContent('');
-  }, [secretKey, pubkey, content, pool]);
+    if (!secretKey || !pubkey || !content.trim() || posting) return;
+    setPosting(true);
+    setPostError('');
+    try {
+      const signed = await signEvent(buildPost(content.trim(), pubkey), secretKey);
+      const result = await pool.publish(signed, { relays: [LOCAL_RELAY] });
+      if (!result.ok) {
+        throw new Error(result.reason || 'Relay did not accept your post');
+      }
+      setEvents((prev) => [signed, ...prev.filter((e) => e.id !== signed.id)]);
+      setContent('');
+      setFeedTab('latest');
+    } catch (err) {
+      setPostError(err instanceof Error ? err.message : 'Could not publish post');
+    } finally {
+      setPosting(false);
+    }
+  }, [secretKey, pubkey, content, pool, posting]);
 
   const likePost = useCallback(
     async (postId: string, author: string) => {
@@ -433,15 +449,18 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="left-rail">
-        <div className="brand"><IconLogo /></div>
+        <div className="brand">
+          <IconLogo size={28} />
+          <span className="brand-text">Unbound</span>
+        </div>
         <button className={`nav-item ${page === 'home' ? 'active' : ''}`} onClick={() => setPage('home')}>
           <IconHome /><span className="nav-label">Home</span>
         </button>
         <button className={`nav-item ${page === 'explore' ? 'active' : ''}`} onClick={() => setPage('explore')}>
-          <IconSearch /><span className="nav-label">Explore</span>
+          <IconExplore /><span className="nav-label">Explore</span>
         </button>
         <button className={`nav-item ${page === 'profile' ? 'active' : ''}`} onClick={() => setPage('profile')}>
-          <IconUser /><span className="nav-label">Profile</span>
+          <IconProfile /><span className="nav-label">Profile</span>
         </button>
         <button className="post-btn" onClick={() => setPage('home')}>
           <span className="post-btn-text">Post</span>
@@ -460,10 +479,16 @@ export default function App() {
           <>
             <div className="top-tabs">
               <button
+                className={`top-tab ${feedTab === 'latest' ? 'active' : ''}`}
+                onClick={() => setFeedTab('latest')}
+              >
+                Latest
+              </button>
+              <button
                 className={`top-tab ${feedTab === 'for-you' ? 'active' : ''}`}
                 onClick={() => setFeedTab('for-you')}
               >
-                For you
+                Hot
               </button>
               <button
                 className={`top-tab ${feedTab === 'following' ? 'active' : ''}`}
@@ -477,14 +502,25 @@ export default function App() {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="What's happening?"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    void publishPost();
+                  }
+                }}
+                placeholder="Share something with the network..."
                 maxLength={280}
                 rows={3}
               />
             </div>
             <div className="compose-actions">
-              <button className="tweet-btn" onClick={publishPost} disabled={!content.trim()}>
-                Post
+              {postError && <div className="compose-error">{postError}</div>}
+              <button
+                className="tweet-btn"
+                onClick={() => void publishPost()}
+                disabled={!content.trim() || posting}
+              >
+                {posting ? 'Posting…' : 'Post'}
               </button>
             </div>
             {feedTab === 'for-you' && (
@@ -496,7 +532,9 @@ export default function App() {
               <div className="empty-state">
                 {feedTab === 'following'
                   ? 'Follow people to see their posts here.'
-                  : 'No posts yet. Be the first — the community decides what\'s hot.'}
+                  : feedTab === 'for-you'
+                    ? 'No posts yet. Be the first — the community decides what\'s hot.'
+                    : 'No posts yet. Write something above to get started.'}
               </div>
             ) : (
               feedPosts.map(renderTweet)

@@ -4,6 +4,7 @@ export * from './events.js';
 export * from './trust.js';
 export * from './auth.js';
 export * from './ranking.js';
+export type { PublishResult } from './client.js';
 export * from './merkle.js';
 export * from './payout.js';
 export * from './client.js';

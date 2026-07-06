@@ -63,6 +63,7 @@ export function computeAlgoHash(): string {
 export function rankHotPosts(ctx: RankingContext): RankedPost[] {
   const engagement = countEngagement(ctx.events);
   const posts = ctx.events.filter((e) => e.kind === KIND.POST);
+  const byId = new Map(posts.map((p) => [p.id, p]));
 
   const scored: RankedPost[] = [];
 
@@ -72,7 +73,6 @@ export function rankHotPosts(ctx: RankingContext): RankedPost[] {
 
     const eng = engagement.get(post.id) ?? { likes: 0, reposts: 0 };
     const score = engagementScore(eng);
-    if (score === 0) continue;
 
     scored.push({
       eventId: post.id,
@@ -82,8 +82,20 @@ export function rankHotPosts(ctx: RankingContext): RankedPost[] {
     });
   }
 
-  scored.sort((a, b) => b.score - a.score);
+  scored.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const pa = byId.get(a.eventId)!.created_at;
+    const pb = byId.get(b.eventId)!.created_at;
+    return pb - pa;
+  });
   return scored.map((r, i) => ({ ...r, position: i + 1 }));
+}
+
+/** All posts, newest first — default feed so new posts always appear. */
+export function latestTimeline(ctx: RankingContext): NostrEvent[] {
+  return ctx.events
+    .filter((e) => e.kind === KIND.POST && !isHidden(e.pubkey, ctx))
+    .sort((a, b) => b.created_at - a.created_at);
 }
 
 /** Home feed: chronological posts from people you follow (+ yourself). */
