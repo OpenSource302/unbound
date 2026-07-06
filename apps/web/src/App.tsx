@@ -30,8 +30,10 @@ import {
 import {
   IconExplore,
   IconHome,
+  IconFollow,
   IconLike,
   IconLogo,
+  IconMute,
   IconProfile,
   IconRepost,
   UnboundLogo,
@@ -185,6 +187,7 @@ export default function App() {
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
+  const [busyActions, setBusyActions] = useState<Set<string>>(() => new Set());
   const [registered, setRegistered] = useState(false);
 
   const pubkey = useMemo(
@@ -306,75 +309,118 @@ export default function App() {
     }
   }, [secretKey, pubkey, content, pool, posting]);
 
+  const runAction = useCallback(
+    async (key: string, fn: () => Promise<NostrEvent | null>) => {
+      if (busyActions.has(key)) return;
+      setBusyActions((prev) => new Set(prev).add(key));
+      try {
+        const signed = await fn();
+        if (!signed) return;
+        const result = await pool.publish(signed, { relays: [LOCAL_RELAY] });
+        if (!result.ok) return;
+        setEvents((prev) => (prev.some((e) => e.id === signed.id) ? prev : [...prev, signed]));
+      } finally {
+        setBusyActions((prev) => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      }
+    },
+    [busyActions, pool],
+  );
+
+  const hasLiked = useCallback(
+    (postId: string) =>
+      events.some(
+        (e) =>
+          e.kind === KIND.REACTION &&
+          e.pubkey === pubkey &&
+          e.tags.find((t) => t[0] === 'e')?.[1] === postId,
+      ),
+    [events, pubkey],
+  );
+
+  const hasReposted = useCallback(
+    (postId: string) =>
+      events.some(
+        (e) =>
+          e.kind === KIND.REPOST &&
+          e.pubkey === pubkey &&
+          e.tags.find((t) => t[0] === 'e')?.[1] === postId,
+      ),
+    [events, pubkey],
+  );
+
   const likePost = useCallback(
     async (postId: string, author: string) => {
-      if (!secretKey || !pubkey) return;
-      const unsigned = createUnsignedEvent({
-        kind: KIND.REACTION,
-        pubkey,
-        content: '+',
-        tags: [
-          ['e', postId],
-          ['p', author],
-          ['k', 'like'],
-        ],
+      if (!secretKey || !pubkey || hasLiked(postId)) return;
+      await runAction(`like:${postId}`, async () => {
+        const unsigned = createUnsignedEvent({
+          kind: KIND.REACTION,
+          pubkey,
+          content: '+',
+          tags: [
+            ['e', postId],
+            ['p', author],
+            ['k', 'like'],
+          ],
+        });
+        return signEvent(unsigned, secretKey);
       });
-      const signed = await signEvent(unsigned, secretKey);
-      pool.publish(signed);
-      setEvents((prev) => [...prev, signed]);
     },
-    [secretKey, pubkey, pool],
+    [secretKey, pubkey, hasLiked, runAction],
   );
 
   const repostPost = useCallback(
     async (postId: string, author: string) => {
-      if (!secretKey || !pubkey) return;
-      const unsigned = createUnsignedEvent({
-        kind: KIND.REPOST,
-        pubkey,
-        content: '',
-        tags: [
-          ['e', postId],
-          ['p', author],
-        ],
+      if (!secretKey || !pubkey || hasReposted(postId)) return;
+      await runAction(`repost:${postId}`, async () => {
+        const unsigned = createUnsignedEvent({
+          kind: KIND.REPOST,
+          pubkey,
+          content: '',
+          tags: [
+            ['e', postId],
+            ['p', author],
+          ],
+        });
+        return signEvent(unsigned, secretKey);
       });
-      const signed = await signEvent(unsigned, secretKey);
-      pool.publish(signed);
-      setEvents((prev) => [...prev, signed]);
     },
-    [secretKey, pubkey, pool],
+    [secretKey, pubkey, hasReposted, runAction],
   );
 
   const followUser = useCallback(
     async (target: string) => {
-      if (!secretKey || !pubkey || target === pubkey) return;
-      const unsigned = createUnsignedEvent({
-        kind: KIND.FOLLOW,
-        pubkey,
-        content: '',
-        tags: [['p', target]],
+      if (!secretKey || !pubkey || target === pubkey || follows.has(target)) return;
+      await runAction(`follow:${target}`, async () => {
+        const unsigned = createUnsignedEvent({
+          kind: KIND.FOLLOW,
+          pubkey,
+          content: '',
+          tags: [['p', target]],
+        });
+        return signEvent(unsigned, secretKey);
       });
-      const signed = await signEvent(unsigned, secretKey);
-      pool.publish(signed);
-      setEvents((prev) => [...prev, signed]);
     },
-    [secretKey, pubkey, pool],
+    [secretKey, pubkey, follows, runAction],
   );
 
   const muteUser = useCallback(
     async (target: string) => {
-      if (!secretKey || !pubkey) return;
-      const unsigned = createUnsignedEvent({
-        kind: KIND.MUTE,
-        pubkey,
-        content: '',
-        tags: [['p', target]],
+      if (!secretKey || !pubkey || mutes.has(target)) return;
+      await runAction(`mute:${target}`, async () => {
+        const unsigned = createUnsignedEvent({
+          kind: KIND.MUTE,
+          pubkey,
+          content: '',
+          tags: [['p', target]],
+        });
+        return signEvent(unsigned, secretKey);
       });
-      const signed = await signEvent(unsigned, secretKey);
-      pool.publish(signed);
-      setEvents((prev) => [...prev, signed]);
     },
-    [secretKey, pubkey, pool],
+    [secretKey, pubkey, mutes, runAction],
   );
 
   const signOut = () => {
@@ -393,18 +439,15 @@ export default function App() {
   const renderTweet = (post: NostrEvent) => {
     const author = profileFor(post.pubkey, profiles);
     const eng = engagement.get(post.id) ?? { likes: 0, reposts: 0 };
-    const iLiked = events.some(
-      (e) =>
-        e.kind === KIND.REACTION &&
-        e.pubkey === pubkey &&
-        e.tags.find((t) => t[0] === 'e')?.[1] === post.id,
-    );
-    const iReposted = events.some(
-      (e) =>
-        e.kind === KIND.REPOST &&
-        e.pubkey === pubkey &&
-        e.tags.find((t) => t[0] === 'e')?.[1] === post.id,
-    );
+    const iLiked = hasLiked(post.id);
+    const iReposted = hasReposted(post.id);
+    const iFollow = follows.has(post.pubkey);
+    const iMuted = mutes.has(post.pubkey);
+    const isOwn = post.pubkey === pubkey;
+    const likeBusy = busyActions.has(`like:${post.id}`);
+    const repostBusy = busyActions.has(`repost:${post.id}`);
+    const followBusy = busyActions.has(`follow:${post.pubkey}`);
+    const muteBusy = busyActions.has(`mute:${post.pubkey}`);
 
     return (
       <article key={post.id} className="tweet">
@@ -417,28 +460,52 @@ export default function App() {
             <span className="tweet-time">{timeAgo(post.created_at)}</span>
           </div>
           <div className="tweet-text">{post.content}</div>
-          <div className="tweet-actions">
+          <div className={`tweet-actions${isOwn ? ' own-post' : ''}`}>
             <button
-              className={`tweet-action ${iReposted ? 'reposted' : ''}`}
-              onClick={() => repostPost(post.id, post.pubkey)}
+              type="button"
+              className={`tweet-action action-repost${iReposted ? ' reposted' : ''}`}
+              onClick={() => void repostPost(post.id, post.pubkey)}
+              disabled={iReposted || repostBusy}
+              aria-label={iReposted ? 'Reposted' : 'Repost'}
+              title={iReposted ? 'You reposted this' : 'Repost'}
             >
-              <IconRepost /> {eng.reposts || ''}
+              <IconRepost />
+              {eng.reposts > 0 && <span className="action-count">{eng.reposts}</span>}
             </button>
             <button
-              className={`tweet-action ${iLiked ? 'liked' : ''}`}
-              onClick={() => likePost(post.id, post.pubkey)}
+              type="button"
+              className={`tweet-action action-like${iLiked ? ' liked' : ''}`}
+              onClick={() => void likePost(post.id, post.pubkey)}
+              disabled={iLiked || likeBusy}
+              aria-label={iLiked ? 'Liked' : 'Like'}
+              title={iLiked ? 'You liked this' : 'Like'}
             >
-              <IconLike /> {eng.likes || ''}
+              <IconLike />
+              {eng.likes > 0 && <span className="action-count">{eng.likes}</span>}
             </button>
-            {post.pubkey !== pubkey && !follows.has(post.pubkey) && (
-              <button className="tweet-action" onClick={() => followUser(post.pubkey)}>
-                Follow
-              </button>
-            )}
-            {post.pubkey !== pubkey && (
-              <button className="tweet-action" onClick={() => muteUser(post.pubkey)} title="Hide from your feed only">
-                Mute
-              </button>
+            {!isOwn && (
+              <>
+                <button
+                  type="button"
+                  className={`tweet-action action-follow${iFollow ? ' following' : ''}`}
+                  onClick={() => void followUser(post.pubkey)}
+                  disabled={iFollow || followBusy}
+                  aria-label={iFollow ? 'Following' : 'Follow user'}
+                  title={iFollow ? 'Following' : 'Follow'}
+                >
+                  <IconFollow />
+                </button>
+                <button
+                  type="button"
+                  className={`tweet-action action-mute${iMuted ? ' muted' : ''}`}
+                  onClick={() => void muteUser(post.pubkey)}
+                  disabled={iMuted || muteBusy}
+                  aria-label={iMuted ? 'Muted' : 'Mute user'}
+                  title={iMuted ? 'Muted — hidden from your feed' : 'Mute — hide from your feed only'}
+                >
+                  <IconMute />
+                </button>
+              </>
             )}
           </div>
         </div>

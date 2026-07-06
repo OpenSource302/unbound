@@ -65,11 +65,30 @@ export function IconRepost() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
       <path
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        d="M5 8h11a3 3 0 010 6H9m-4-3l3-3M19 16H8a3 3 0 010-6h7m4 3l-3 3"
+        fill="currentColor"
+        d="M4 6.75A2.75 2.75 0 016.75 4h10.5A2.75 2.75 0 0120 6.75v1.1h-1.5v-1.1c0-.69-.56-1.25-1.25-1.25H6.75c-.69 0-1.25.56-1.25 1.25v10.5c0 .69.56 1.25 1.25 1.25h1.1V20H6.75A2.75 2.75 0 014 17.25V6.75zm14.5 3.5a2.75 2.75 0 012.75 2.75v7.25A2.75 2.75 0 0118.25 22.5H7.75A2.75 2.75 0 015 19.75v-1.1h1.5v1.1c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-7.25c0-.69-.56-1.25-1.25-1.25h-1.1v-1.5h1.1z"
+      />
+    </svg>
+  );
+}
+
+export function IconFollow() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 4.5a3.5 3.5 0 110 7 3.5 3.5 0 010-7zM5.5 20c0-3.04 2.46-5.5 6.5-5.5s6.5 2.46 6.5 5.5v.75H5.5V20zm12.75-9.25h2.5V8h1.5v2.75H22v1.5h-1.75V15h-1.5v-2.75h-2.5v-1.5z"
+      />
+    </svg>
+  );
+}
+
+export function IconMute() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 3.5a1 1 0 00-1 1v5.17L6.88 6.55A1 1 0 005.5 7v10a1 1 0 001.38.92L11 14.83V20a1 1 0 001 1h1.2a1 1 0 00.74-.33l5.06-5.55H20a1 1 0 001-1v-2.9a1 1 0 00-1-1h-1.08l-1.2-1.32V4.5a1 1 0 00-1-1H12zm7.3 8.2l-6.9 7.58V5.62l6.9 6.08z"
       />
     </svg>
   );
