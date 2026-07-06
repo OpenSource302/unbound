@@ -1,15 +1,17 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { NostrEvent } from '@unbound/core';
-import { isReplaceableKind } from '@unbound/core';
+import { isReplaceableKind, KIND, parseUsernameEvent } from '@unbound/core';
 
 export class EventStore {
   private events = new Map<string, NostrEvent>();
+  private usernames = new Map<string, string>();
   private path: string;
 
   constructor(path: string) {
     this.path = path.endsWith('.json') ? path : `${path}/events.json`;
     this.load();
+    this.rebuildUsernameIndex();
   }
 
   private load(): void {
@@ -22,24 +24,56 @@ export class EventStore {
     }
   }
 
+  private rebuildUsernameIndex(): void {
+    this.usernames.clear();
+    for (const e of this.events.values()) {
+      const claim = parseUsernameEvent(e);
+      if (claim) this.usernames.set(claim.username, claim.pubkey);
+    }
+  }
+
   private persist(): void {
     const dir = dirname(this.path);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     writeFileSync(this.path, JSON.stringify([...this.events.values()], null, 0));
   }
 
+  /** Returns error message if username claim is invalid. */
+  validateUsernameClaim(event: NostrEvent): string | null {
+    if (event.kind !== KIND.USERNAME) return null;
+    const claim = parseUsernameEvent(event);
+    if (!claim) return 'invalid username event';
+
+    const existing = this.usernames.get(claim.username);
+    if (existing && existing !== event.pubkey) {
+      return `username @${claim.username} already taken`;
+    }
+    return null;
+  }
+
   insert(event: NostrEvent): boolean {
     if (this.events.has(event.id)) return false;
+
+    const usernameErr = this.validateUsernameClaim(event);
+    if (usernameErr) return false;
 
     if (isReplaceableKind(event.kind)) {
       for (const [id, e] of this.events) {
         if (e.pubkey === event.pubkey && e.kind === event.kind) {
+          if (e.kind === KIND.USERNAME) {
+            const old = parseUsernameEvent(e);
+            if (old) this.usernames.delete(old.username);
+          }
           this.events.delete(id);
         }
       }
     }
 
     this.events.set(event.id, event);
+
+    const claim = parseUsernameEvent(event);
+    if (claim) this.usernames.set(claim.username, claim.pubkey);
+
     this.persist();
     return true;
   }

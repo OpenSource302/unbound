@@ -31,6 +31,7 @@ const ALLOWED_KINDS = new Set([
   KIND.RELAY_ATTEST,
   KIND.CAMPAIGN,
   KIND.POOL_MANIFEST,
+  KIND.USERNAME,
 ]);
 
 export interface RelayOptions {
@@ -99,6 +100,12 @@ export class UnboundRelay {
 
     if (!ALLOWED_KINDS.has(event.kind)) {
       ws.send(JSON.stringify(['OK', event.id, false, 'kind not allowed']));
+      return;
+    }
+
+    const usernameErr = this.store.validateUsernameClaim(event);
+    if (usernameErr) {
+      ws.send(JSON.stringify(['OK', event.id, false, usernameErr]));
       return;
     }
 

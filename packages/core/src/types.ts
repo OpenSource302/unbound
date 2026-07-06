@@ -43,6 +43,8 @@ export const KIND = {
   CAMPAIGN: 30091,
   /** Pool genesis manifest. */
   POOL_MANIFEST: 30092,
+  /** Username claim (unique, tied to pubkey). */
+  USERNAME: 30095,
 } as const;
 
 export type UnboundKind = (typeof KIND)[keyof typeof KIND];

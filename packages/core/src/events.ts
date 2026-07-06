@@ -14,7 +14,12 @@ export function getSingleTag(event: NostrEvent, name: string): string | undefine
 }
 
 export function isReplaceableKind(kind: number): boolean {
-  return kind === 0 || (kind >= 10000 && kind < 20000) || (kind >= 30000 && kind < 40000);
+  return (
+    kind === 0 ||
+    kind === 30095 ||
+    (kind >= 10000 && kind < 20000) ||
+    (kind >= 30000 && kind < 40000)
+  );
 }
 
 export function validateEventShape(event: NostrEvent): string | null {

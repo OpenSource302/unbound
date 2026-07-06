@@ -2,6 +2,7 @@ export * from './types.js';
 export * from './crypto.js';
 export * from './events.js';
 export * from './trust.js';
+export * from './auth.js';
 export * from './ranking.js';
 export * from './merkle.js';
 export * from './payout.js';
