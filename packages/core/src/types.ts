@@ -11,7 +11,7 @@ export interface NostrEvent {
 
 export type UnsignedEvent = Omit<NostrEvent, 'id' | 'sig'>;
 
-/** Standard Nostr kinds used by The Pit. */
+/** Standard Nostr kinds used by Unbound. */
 export const KIND = {
   METADATA: 0,
   POST: 1,
@@ -45,7 +45,7 @@ export const KIND = {
   POOL_MANIFEST: 30092,
 } as const;
 
-export type PitKind = (typeof KIND)[keyof typeof KIND];
+export type UnboundKind = (typeof KIND)[keyof typeof KIND];
 
 /** Revenue split buckets — all percentages must sum to 1.0. */
 export interface PoolRules {
@@ -63,7 +63,7 @@ export interface PoolRules {
 }
 
 export const DEFAULT_POOL_RULES: PoolRules = {
-  version: 'pit-pool-rules-v1',
+  version: 'unbound-pool-rules-v1',
   creatorShare: 0.5,
   relayShare: 0.3,
   gatewayShare: 0.15,
@@ -99,12 +99,12 @@ export interface RankedPost {
 }
 
 export interface FeedParams {
-  mode: 'chron' | 'friends' | 'pit' | 'stake' | 'chaos';
+  mode: 'chron' | 'friends' | 'open' | 'stake' | 'chaos';
   weights: Record<string, number>;
 }
 
 export const DEFAULT_FEED_PARAMS: FeedParams = {
-  mode: 'pit',
+  mode: 'open',
   weights: {
     likes: 3,
     reposts: 5,

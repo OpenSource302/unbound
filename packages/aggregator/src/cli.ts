@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { EpochAggregator } from './aggregator.js';
-import { generateSecretKey, getPublicKey, hexToBytes } from '@thepit/core';
+import { generateSecretKey, getPublicKey, hexToBytes } from '@unbound/core';
 
-const relayUrl = process.env.PIT_RELAY_URL ?? 'ws://127.0.0.1:7777';
-const poolPubkey = process.env.PIT_POOL_PUBKEY ?? getPublicKey(generateSecretKey());
-const grossSats = parseInt(process.env.PIT_EPOCH_GROSS ?? '1000000', 10);
-const outputDir = process.env.PIT_AGG_OUTPUT ?? './data/epochs';
+const relayUrl = process.env.UNBOUND_RELAY_URL ?? 'ws://127.0.0.1:7777';
+const poolPubkey = process.env.UNBOUND_POOL_PUBKEY ?? getPublicKey(generateSecretKey());
+const grossSats = parseInt(process.env.UNBOUND_EPOCH_GROSS ?? '1000000', 10);
+const outputDir = process.env.UNBOUND_AGG_OUTPUT ?? './data/epochs';
 
-const secretHex = process.env.PIT_AGG_SECRET;
+const secretHex = process.env.UNBOUND_AGG_SECRET;
 const secret = secretHex ? hexToBytes(secretHex) : generateSecretKey();
 const pubkey = getPublicKey(secret);
 

@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import type { NostrEvent } from '@thepit/core';
+import type { NostrEvent } from '@unbound/core';
 import {
   KIND,
   computeEpochPayout,
@@ -9,7 +9,7 @@ import {
   signEvent,
   createUnsignedEvent,
   getSingleTag,
-} from '@thepit/core';
+} from '@unbound/core';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 

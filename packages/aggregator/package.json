@@ -1,11 +1,11 @@
 {
-  "name": "@thepit/aggregator",
+  "name": "@unbound/aggregator",
   "version": "0.1.0",
   "description": "Epoch aggregator — validates receipts, builds Merkle payout trees",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "bin": {
-    "thepit-aggregator": "./dist/cli.js"
+    "unbound-aggregator": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -14,7 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@thepit/core": "0.1.0",
+    "@unbound/core": "0.1.0",
     "ws": "^8.18.1"
   },
   "devDependencies": {

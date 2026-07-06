@@ -1,4 +1,4 @@
-# NIP-PIT-01: Relay Manifest
+# NIP-UNBOUND-01: Relay Manifest
 
 `draft` `optional`
 
@@ -25,11 +25,11 @@ Relays publish signed manifest events describing their policies, supported pools
 {
   "kind": 30077,
   "tags": [
-    ["name", "pit-relay-east"],
+    ["name", "unbound-relay-east"],
     ["pool", "pool_pubkey_hex"],
     ["retention", "90"]
   ],
-  "content": "Open relay for The Pit network"
+  "content": "Open relay for Unbound network"
 }
 ```
 

@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import type { NostrEvent } from '@thepit/core';
-import { validateEvent, KIND } from '@thepit/core';
+import type { NostrEvent } from '@unbound/core';
+import { validateEvent, KIND } from '@unbound/core';
 import { EventStore } from './store.js';
 
 interface Subscription {
@@ -40,7 +40,7 @@ export interface RelayOptions {
   name?: string;
 }
 
-export class PitRelay {
+export class UnboundRelay {
   private store: EventStore;
   private wss: WebSocketServer | null = null;
   private subs = new Map<WebSocket, Subscription[]>();
@@ -48,7 +48,7 @@ export class PitRelay {
 
   constructor(private opts: RelayOptions = {}) {
     this.store = new EventStore(opts.dbPath ?? './data/relay');
-    this.name = opts.name ?? 'the-pit-relay';
+    this.name = opts.name ?? 'unbound-relay';
   }
 
   start(): void {
@@ -63,7 +63,7 @@ export class PitRelay {
 
   private onConnection(ws: WebSocket): void {
     this.subs.set(ws, []);
-    ws.send(JSON.stringify(['NOTICE', `Welcome to ${this.name} — The Pit relay`]));
+    ws.send(JSON.stringify(['NOTICE', `Welcome to ${this.name} — Unbound relay`]));
 
     ws.on('message', (data) => {
       try {

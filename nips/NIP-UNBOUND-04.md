@@ -1,4 +1,4 @@
-# NIP-PIT-04: Ranking Snapshots
+# NIP-UNBOUND-04: Ranking Snapshots
 
 `draft` `optional`
 
@@ -14,7 +14,7 @@ Clients publish ranked post lists for decentralized trending consensus.
 
 - `algo` — SHA-256 fingerprint of ranking algorithm + weights
 - `window` — time window (`24h`, `7d`)
-- `d` — dimension identifier (`pit-global`, `pit-regional`, etc.)
+- `d` — dimension identifier (`unbound-global`, `unbound-regional`, etc.)
 - `rank` — `event_id`, `score`, `position` (repeatable)
 
 ## Consensus
@@ -27,10 +27,10 @@ Clients aggregate snapshots from trusted publishers:
 
 ## Algorithm
 
-Default: PitRank v1 in `packages/core/src/ranking.ts`. Algorithm hash:
+Default: UnboundRank v1 in `packages/core/src/ranking.ts`. Algorithm hash:
 
 ```
-SHA256("PitRank-v1-" + canonical_json(feed_params))
+SHA256("UnboundRank-v1-" + canonical_json(feed_params))
 ```
 
 Publishers SHOULD include `algo` tag so consumers can filter by algorithm version.

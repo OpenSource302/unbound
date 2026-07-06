@@ -39,10 +39,10 @@ function getReferencedPostId(event: NostrEvent): string | undefined {
 }
 
 export function computeAlgoHash(params: FeedParams = DEFAULT_FEED_PARAMS): string {
-  return sha256Hex(`PitRank-v1-${JSON.stringify(params)}`).slice(0, 16);
+  return sha256Hex(`UnboundRank-v1-${JSON.stringify(params)}`).slice(0, 16);
 }
 
-/** PitRank v1 — deterministic local feed scoring. */
+/** UnboundRank v1 — deterministic local feed scoring. */
 export function rankPosts(ctx: RankingContext): RankedPost[] {
   const params = ctx.params ?? DEFAULT_FEED_PARAMS;
   const w = params.weights;
@@ -202,7 +202,7 @@ export function snapshotToEventTags(ranked: RankedPost[], algoHash: string, wind
   const tags: string[][] = [
     ['algo', algoHash],
     ['window', window],
-    ['d', 'pit-global'],
+    ['d', 'unbound-global'],
   ];
   for (const r of ranked.slice(0, 100)) {
     tags.push(['rank', r.eventId, r.score.toFixed(2), String(r.position)]);

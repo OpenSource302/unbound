@@ -1,7 +1,7 @@
 {
-  "name": "@thepit/core",
+  "name": "@unbound/core",
   "version": "0.1.0",
-  "description": "Core types, crypto, ranking, and payout logic for The Pit",
+  "description": "Core types, crypto, ranking, and payout logic for Unbound",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "main": "./dist/index.js",

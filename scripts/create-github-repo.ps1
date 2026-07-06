@@ -1,8 +1,8 @@
-# Creates a public GitHub repo and pushes The Pit
+# Creates a public GitHub repo and pushes Unbound
 # Requires: GitHub CLI (gh) — install via winget install GitHub.cli
 
 param(
-    [string]$RepoName = "the-pit",
+    [string]$RepoName = "unbound",
     [string]$Description = "Decentralized Nostr-style social network with creator revenue sharing — fully open source"
 )
 

@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { NostrEvent } from '@thepit/core';
-import { isReplaceableKind } from '@thepit/core';
+import type { NostrEvent } from '@unbound/core';
+import { isReplaceableKind } from '@unbound/core';
 
 export class EventStore {
   private events = new Map<string, NostrEvent>();

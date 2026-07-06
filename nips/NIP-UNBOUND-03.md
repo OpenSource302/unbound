@@ -1,4 +1,4 @@
-# NIP-PIT-03: Revenue Pools & Payout Trees
+# NIP-UNBOUND-03: Revenue Pools & Payout Trees
 
 `draft` `optional`
 
@@ -36,7 +36,7 @@ Tags:
 
 ## Rule Hash
 
-Computed from canonical JSON of `PoolRules` in `@thepit/core`. Default:
+Computed from canonical JSON of `PoolRules` in `@unbound/core`. Default:
 
 ```json
 {

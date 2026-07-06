@@ -1,4 +1,4 @@
-# The Pit — Payout System
+# Unbound — Payout System
 
 ## Design Goal
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { NostrEvent } from '@thepit/core';
+import type { NostrEvent } from '@unbound/core';
 import {
   RelayPool,
   buildPost,
@@ -14,7 +14,7 @@ import {
   currentEpoch,
   parseEngagementReceipts,
   computeEpochPayout,
-} from '@thepit/core';
+} from '@unbound/core';
 
 const DEFAULT_RELAYS = [
   'ws://127.0.0.1:7777',
@@ -25,7 +25,7 @@ const DEFAULT_RELAYS = [
 type Tab = 'feed' | 'trending' | 'payouts' | 'settings';
 
 function loadKey(): Uint8Array | null {
-  const stored = localStorage.getItem('pit_nsec');
+  const stored = localStorage.getItem('UNBOUND_nsec');
   if (!stored) return null;
   try {
     return hexToBytes(stored);
@@ -35,7 +35,7 @@ function loadKey(): Uint8Array | null {
 }
 
 function saveKey(key: Uint8Array): void {
-  localStorage.setItem('pit_nsec', bytesToHex(key));
+  localStorage.setItem('UNBOUND_nsec', bytesToHex(key));
 }
 
 export default function App() {
@@ -58,7 +58,7 @@ export default function App() {
     pool.connect();
     setConnected(true);
 
-    const subId = 'pit-feed';
+    const subId = 'unbound-feed';
     pool.onMessage((msg) => {
       if (msg[0] === 'EVENT') {
         const event = msg[2] as NostrEvent;
@@ -140,7 +140,7 @@ export default function App() {
       relayWork: [],
       gatewaySpend: new Map([['gateway', 150_000]]),
       devRecipients: [{ pubkey: 'dev', weight: 1 }],
-      poolPubkey: 'pit-pool-main',
+      poolPubkey: 'unbound-pool-main',
       epoch,
     });
   }, [events]);
@@ -161,7 +161,7 @@ export default function App() {
     }
   }, []);
 
-  const scream = useCallback(async () => {
+  const publishPost = useCallback(async () => {
     if (!secretKey || !pubkey || !content.trim()) return;
     const unsigned = buildPost(content.trim(), pubkey);
     const signed = await signEvent(unsigned, secretKey);
@@ -180,10 +180,10 @@ export default function App() {
   if (!secretKey || !pubkey) {
     return (
       <div className="main" style={{ maxWidth: 420, marginTop: '10vh' }}>
-        <div className="logo">The Pit</div>
-        <p className="tagline">Decentralized. Signed. Paid.</p>
+        <div className="logo">Unbound</div>
+        <p className="tagline">Open Twitter. No censorship. Creators with stake.</p>
         <div className="card">
-          <p>Your identity is a cryptographic keypair. No signup. No company.</p>
+          <p>Your identity is a cryptographic keypair. No company can ban you. Creators earn from real engagement.</p>
           <button className="btn" onClick={login} style={{ width: '100%', marginTop: '1rem' }}>
             Generate New Identity
           </button>
@@ -212,8 +212,8 @@ export default function App() {
   return (
     <div className="app">
       <aside className="sidebar">
-        <div className="logo">The Pit</div>
-        <p className="tagline">no corporate overlords</p>
+        <div className="logo">Unbound</div>
+        <p className="tagline">no censorship · creators with stake</p>
         <nav className="nav">
           {(['feed', 'trending', 'payouts', 'settings'] as Tab[]).map((t) => (
             <button
@@ -238,15 +238,15 @@ export default function App() {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Scream into the pit..."
+                placeholder="What's happening?"
                 maxLength={500}
               />
-              <button className="btn" onClick={scream} disabled={!content.trim()}>
+              <button className="btn" onClick={publishPost} disabled={!content.trim()}>
                 Post
               </button>
             </div>
             {feedPosts.length === 0 ? (
-              <div className="empty">No screams yet. Be the first.</div>
+              <div className="empty">Your feed is empty. Post something — you own this space.</div>
             ) : (
               feedPosts.map((post) => (
                 <article key={post.id} className="card">
@@ -264,7 +264,7 @@ export default function App() {
 
         {tab === 'trending' && (
           <div className="card">
-            <h3>Trending (local PitRank)</h3>
+            <h3>Trending (local UnboundRank)</h3>
             <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
               Algo: {computeAlgoHash().slice(0, 12)}... — computed on your device, not by a server.
             </p>

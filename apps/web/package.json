@@ -1,5 +1,5 @@
 {
-  "name": "@thepit/web",
+  "name": "@unbound/web",
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@thepit/core": "0.1.0",
+    "@unbound/core": "0.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

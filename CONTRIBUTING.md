@@ -1,4 +1,4 @@
-# Contributing to The Pit
+# Contributing to Unbound
 
 Everything in this project is open source. No hidden algorithms, no closed payout logic.
 
@@ -21,7 +21,7 @@ npm run dev
 ## Pull Request Guidelines
 
 - One logical change per PR
-- Include tests for `@thepit/core` changes
+- Include tests for `@unbound/core` changes
 - Update NIP docs if adding event kinds or changing validation rules
 - Never commit secrets, keys, or `.env` files
 

@@ -1,8 +1,8 @@
-# The Pit — Architecture
+# Unbound — Architecture
 
 ## Overview
 
-The Pit is a Nostr-compatible decentralized social network with built-in creator revenue sharing. No blockchain. No central company.
+Unbound is a Nostr-compatible decentralized social network with built-in creator revenue sharing. No blockchain. No central company.
 
 ## Components
 
@@ -23,15 +23,15 @@ Relays accept WebSocket connections and implement NIP-01:
 
 Relays do NOT: rank feeds, serve ads, compute payouts, moderate globally.
 
-Implementation: `@thepit/relay` — Rust-quality design in TypeScript + SQLite for MVP.
+Implementation: `@unbound/relay` — Rust-quality design in TypeScript + SQLite for MVP.
 
 ### 3. Clients (Smart Layer)
 
-Clients (`@thepit/web`, future mobile/desktop):
+Clients (`@unbound/web`, future mobile/desktop):
 
 - Manage relay pools (5–15 relays)
 - Deduplicate events by `id`
-- Run PitRank locally
+- Run UnboundRank locally
 - Render ads and sign engagement receipts
 - Display payout dashboards with Merkle verification
 - Publish rank snapshots (optional)
@@ -42,7 +42,7 @@ Independent services that:
 
 1. Collect kind 30078 engagement receipts for an epoch
 2. Validate (dedupe, stake gates, rate caps)
-3. Run `computeEpochPayout()` from `@thepit/core`
+3. Run `computeEpochPayout()` from `@unbound/core`
 4. Publish kind 30080 Merkle roots
 5. Write full breakdown JSON to disk/IPFS
 
@@ -89,7 +89,7 @@ User → sign kind 1 → EVENT → [relay1, relay2, relay3] → stored → broad
 ### Reading
 
 ```
-Client → REQ (filters) → relays → merge + dedupe → PitRank → feed
+Client → REQ (filters) → relays → merge + dedupe → UnboundRank → feed
 ```
 
 ### Monetization

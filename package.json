@@ -1,19 +1,19 @@
 {
-  "name": "the-pit",
+  "name": "unbound",
   "version": "0.1.0",
   "private": true,
-  "description": "The Pit — decentralized Nostr-style social network with creator revenue sharing",
+  "description": "Unbound — open Twitter clone with no censorship and creator stake",
   "license": "AGPL-3.0-or-later",
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w @thepit/core && npm run build -w @thepit/relay -w @thepit/aggregator -w @thepit/web",
-    "dev": "concurrently -n relay,web,agg -c blue,green,yellow \"npm run dev -w @thepit/relay\" \"npm run dev -w @thepit/web\" \"npm run dev -w @thepit/aggregator\"",
-    "dev:relay": "npm run dev -w @thepit/relay",
-    "dev:web": "npm run dev -w @thepit/web",
-    "dev:aggregator": "npm run dev -w @thepit/aggregator",
+    "build": "npm run build -w @unbound/core && npm run build -w @unbound/relay -w @unbound/aggregator -w @unbound/web",
+    "dev": "concurrently -n relay,web,agg -c blue,green,yellow \"npm run dev -w @unbound/relay\" \"npm run dev -w @unbound/web\" \"npm run dev -w @unbound/aggregator\"",
+    "dev:relay": "npm run dev -w @unbound/relay",
+    "dev:web": "npm run dev -w @unbound/web",
+    "dev:aggregator": "npm run dev -w @unbound/aggregator",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

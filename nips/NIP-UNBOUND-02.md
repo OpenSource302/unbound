@@ -1,4 +1,4 @@
-# NIP-PIT-02: Engagement Receipts
+# NIP-UNBOUND-02: Engagement Receipts
 
 `draft` `optional`
 
