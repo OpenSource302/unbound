@@ -1,0 +1,24 @@
+{
+  "name": "@thepit/relay",
+  "version": "0.1.0",
+  "description": "NIP-01 WebSocket relay for The Pit with Pit kind validation",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "bin": {
+    "thepit-relay": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/cli.ts",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@thepit/core": "0.1.0",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.0",
+    "tsx": "^4.19.3"
+  }
+}
