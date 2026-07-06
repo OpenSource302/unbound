@@ -53,7 +53,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PAYOUT.md](docs/PAYOU
 ### Install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/the-pit.git
+git clone https://github.com/opensource302/the-pit.git
 cd the-pit
 npm install
 npm run build
