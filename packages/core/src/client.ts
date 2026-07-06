@@ -1,4 +1,5 @@
 import type { NostrEvent, UnsignedEvent } from './types.js';
+import { buildPostMediaTags, type PostMedia } from './media.js';
 
 type MessageHandler = (msg: unknown[]) => void;
 
@@ -184,12 +185,15 @@ export class RelayPool {
   }
 }
 
-export function buildPost(content: string, pubkey: string): UnsignedEvent {
+export function buildPost(content: string, pubkey: string, media: PostMedia[] = []): UnsignedEvent {
   return {
     kind: 1,
     pubkey,
     created_at: Math.floor(Date.now() / 1000),
-    tags: [],
+    tags: buildPostMediaTags(media),
     content,
   };
 }
+
+export type { PostMedia } from './media.js';
+export { parsePostMedia, buildPostMediaTags } from './media.js';

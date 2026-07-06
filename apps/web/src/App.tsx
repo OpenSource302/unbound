@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NostrEvent, UserProfile } from '@unbound/core';
 import {
   RelayPool,
   buildPost,
+  parsePostMedia,
   signEvent,
   generateSecretKey,
   getPublicKey,
@@ -33,17 +34,32 @@ import {
   IconFollow,
   IconLike,
   IconLogo,
+  IconMedia,
   IconMute,
   IconProfile,
   IconRepost,
   UnboundLogo,
 } from './icons';
+import {
+  displayMediaUrl,
+  mediaKind,
+  toPostMedia,
+  uploadMediaFile,
+  validateMediaFile,
+} from './upload-media';
 
 const LOCAL_RELAY = 'ws://127.0.0.1:7777';
 const DEFAULT_RELAYS = [LOCAL_RELAY, 'wss://relay.damus.io', 'wss://nos.lol'];
 
 type Page = 'home' | 'explore' | 'profile';
 type AuthMode = 'signup' | 'signin';
+
+interface PendingAttachment {
+  id: string;
+  file: File;
+  previewUrl: string;
+  kind: 'image' | 'video';
+}
 
 function timeAgo(ts: number): string {
   const s = Math.floor(Date.now() / 1000) - ts;
@@ -187,8 +203,10 @@ export default function App() {
   const [content, setContent] = useState('');
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState('');
+  const [pendingMedia, setPendingMedia] = useState<PendingAttachment[]>([]);
   const [busyActions, setBusyActions] = useState<Set<string>>(() => new Set());
   const [registered, setRegistered] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pubkey = useMemo(
     () => (secretKey ? getPublicKey(secretKey) : null),
@@ -289,25 +307,81 @@ export default function App() {
     [publishRegistration],
   );
 
+  const clearPendingMedia = useCallback(() => {
+    setPendingMedia((prev) => {
+      for (const item of prev) URL.revokeObjectURL(item.previewUrl);
+      return [];
+    });
+  }, []);
+
+  const addMediaFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files) return;
+      setPostError('');
+      const next: PendingAttachment[] = [];
+      const existing = pendingMedia.map((m) => ({ kind: m.kind }));
+
+      for (const file of Array.from(files)) {
+        const err = validateMediaFile(file, [
+          ...existing,
+          ...next.map((n) => ({ kind: n.kind })),
+        ]);
+        if (err) {
+          setPostError(err);
+          continue;
+        }
+        const kind = mediaKind(file);
+        if (!kind) continue;
+        next.push({
+          id: crypto.randomUUID(),
+          file,
+          previewUrl: URL.createObjectURL(file),
+          kind,
+        });
+      }
+
+      if (next.length > 0) {
+        setPendingMedia((prev) => [...prev, ...next]);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    },
+    [pendingMedia],
+  );
+
+  const removePendingMedia = useCallback((id: string) => {
+    setPendingMedia((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (item) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  }, []);
+
   const publishPost = useCallback(async () => {
-    if (!secretKey || !pubkey || !content.trim() || posting) return;
+    if (!secretKey || !pubkey || posting) return;
+    if (!content.trim() && pendingMedia.length === 0) return;
     setPosting(true);
     setPostError('');
     try {
-      const signed = await signEvent(buildPost(content.trim(), pubkey), secretKey);
+      const uploaded = [];
+      for (const item of pendingMedia) {
+        const result = await uploadMediaFile(item.file);
+        uploaded.push(toPostMedia(result));
+      }
+      const signed = await signEvent(buildPost(content.trim(), pubkey, uploaded), secretKey);
       const result = await pool.publish(signed, { relays: [LOCAL_RELAY] });
       if (!result.ok) {
         throw new Error(result.reason || 'Relay did not accept your post');
       }
       setEvents((prev) => [signed, ...prev.filter((e) => e.id !== signed.id)]);
       setContent('');
+      clearPendingMedia();
       setFeedTab('latest');
     } catch (err) {
       setPostError(err instanceof Error ? err.message : 'Could not publish post');
     } finally {
       setPosting(false);
     }
-  }, [secretKey, pubkey, content, pool, posting]);
+  }, [secretKey, pubkey, content, pendingMedia, pool, posting, clearPendingMedia]);
 
   const runAction = useCallback(
     async (key: string, fn: () => Promise<NostrEvent | null>) => {
@@ -443,6 +517,7 @@ export default function App() {
     const iReposted = hasReposted(post.id);
     const iFollow = follows.has(post.pubkey);
     const iMuted = mutes.has(post.pubkey);
+    const media = parsePostMedia(post);
     const isOwn = post.pubkey === pubkey;
     const likeBusy = busyActions.has(`like:${post.id}`);
     const repostBusy = busyActions.has(`repost:${post.id}`);
@@ -459,7 +534,31 @@ export default function App() {
             <span className="tweet-handle">·</span>
             <span className="tweet-time">{timeAgo(post.created_at)}</span>
           </div>
-          <div className="tweet-text">{post.content}</div>
+          {post.content && <div className="tweet-text">{post.content}</div>}
+          {media.length > 0 && (
+            <div className={`post-media post-media--${Math.min(media.length, 4)}`}>
+              {media.map((m, i) => (
+                <div key={`${post.id}-media-${i}`} className="post-media-item-wrap">
+                  {m.kind === 'video' ? (
+                    <video
+                      className="post-media-item"
+                      src={displayMediaUrl(m.url)}
+                      controls
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      className="post-media-item"
+                      src={displayMediaUrl(m.url)}
+                      alt={m.alt ?? 'Attached image'}
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           <div className={`tweet-actions${isOwn ? ' own-post' : ''}`}>
             <button
               type="button"
@@ -566,26 +665,67 @@ export default function App() {
             </div>
             <div className="compose">
               <div className="avatar lg">{me.displayName[0]?.toUpperCase()}</div>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    void publishPost();
-                  }
-                }}
-                placeholder="Share something with the network..."
-                maxLength={280}
-                rows={3}
-              />
+              <div className="compose-main">
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      void publishPost();
+                    }
+                  }}
+                  placeholder="Share something with the network..."
+                  maxLength={280}
+                  rows={3}
+                />
+                {pendingMedia.length > 0 && (
+                  <div className="compose-media">
+                    {pendingMedia.map((item) => (
+                      <div key={item.id} className="compose-media-item">
+                        {item.kind === 'video' ? (
+                          <video src={item.previewUrl} className="compose-media-preview" muted playsInline />
+                        ) : (
+                          <img src={item.previewUrl} alt="" className="compose-media-preview" />
+                        )}
+                        <button
+                          type="button"
+                          className="compose-media-remove"
+                          onClick={() => removePendingMedia(item.id)}
+                          aria-label="Remove attachment"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="compose-actions">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
+                multiple
+                hidden
+                onChange={(e) => addMediaFiles(e.target.files)}
+              />
+              <button
+                type="button"
+                className="compose-media-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={posting}
+                title="Add photos or video"
+                aria-label="Add photos or video"
+              >
+                <IconMedia />
+              </button>
               {postError && <div className="compose-error">{postError}</div>}
               <button
                 className="tweet-btn"
                 onClick={() => void publishPost()}
-                disabled={!content.trim() || posting}
+                disabled={(!content.trim() && pendingMedia.length === 0) || posting}
               >
                 {posting ? 'Posting…' : 'Post'}
               </button>

@@ -183,7 +183,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .compose textarea {
-  flex: 1;
+  width: 100%;
   background: none;
   border: none;
   color: var(--text);
@@ -196,6 +196,73 @@ a { color: inherit; text-decoration: none; }
 
 .compose textarea::placeholder { color: var(--muted); }
 
+.compose-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.compose-media {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.compose-media-item {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.compose-media-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.compose-media-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.compose-media-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9999px;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  margin-right: auto;
+}
+
+.compose-media-btn:hover:not(:disabled) {
+  background: rgba(29, 155, 240, 0.12);
+}
+
+.compose-media-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 .compose-actions {
   display: flex;
   align-items: center;
@@ -203,6 +270,40 @@ a { color: inherit; text-decoration: none; }
   gap: 12px;
   padding: 0 16px 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.post-media {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  max-width: 100%;
+}
+
+.post-media--1 { grid-template-columns: 1fr; }
+.post-media--2 { grid-template-columns: 1fr 1fr; }
+.post-media--3 { grid-template-columns: 1fr 1fr; }
+.post-media--3 .post-media-item-wrap:first-child { grid-column: 1 / -1; }
+.post-media--4 { grid-template-columns: 1fr 1fr; }
+
+.post-media-item-wrap {
+  background: #111;
+  min-height: 120px;
+}
+
+.post-media-item {
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  display: block;
+  background: #111;
+}
+
+.post-media-item-wrap video.post-media-item {
+  object-fit: contain;
+  max-height: 480px;
 }
 
 .compose-error {

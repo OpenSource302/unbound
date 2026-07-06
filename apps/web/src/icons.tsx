@@ -99,3 +99,14 @@ export const IconLogo = UnboundLogo;
 export function IconSearch() {
   return <IconExplore />;
 }
+
+export function IconMedia() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M5 5.5A2.5 2.5 0 017.5 3h9A2.5 2.5 0 0119 5.5v13A2.5 2.5 0 0116.5 21h-9A2.5 2.5 0 015 18.5v-13zM7.5 5a.5.5 0 00-.5.5v9.38l3.15-3.15a1 1 0 011.4 0L14.5 16l2.1-2.1a1 1 0 011.4 0L18.5 16V5.5a.5.5 0 00-.5-.5h-9zM9 8.75A1.25 1.25 0 1010.25 10 1.25 1.25 0 009 8.75z"
+      />
+    </svg>
+  );
+}

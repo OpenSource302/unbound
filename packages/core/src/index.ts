@@ -8,3 +8,4 @@ export type { PublishResult } from './client.js';
 export * from './merkle.js';
 export * from './payout.js';
 export * from './client.js';
+export * from './media.js';
