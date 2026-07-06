@@ -1,4 +1,4 @@
-# Push Unbound to github.com/opensource302/unbound
+# Push Unbound to github.com/OpenSource302/unbound
 # Usage:
 #   Option A (token): $env:GH_TOKEN = "ghp_..." ; .\scripts\push-to-github.ps1
 #   Option B (gh login): gh auth login first, then .\scripts\push-to-github.ps1
@@ -25,15 +25,15 @@ if ($LASTEXITCODE -ne 0) {
 $login = gh api user -q .login
 Write-Host "Logged in as: $login"
 
-$exists = gh repo view opensource302/unbound 2>$null
+$exists = gh repo view OpenSource302/unbound 2>$null
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Creating public repo opensource302/unbound..."
+    Write-Host "Creating public repo OpenSource302/unbound..."
     gh repo create unbound --public --description "Open Twitter clone — no censorship, creators with stake"
 }
 
 git remote remove origin 2>$null
-git remote add origin https://github.com/opensource302/unbound.git
+git remote add origin https://github.com/OpenSource302/unbound.git
 git push -u origin main
 
 Write-Host ""
-Write-Host "Live at: https://github.com/opensource302/unbound"
+Write-Host "Live at: https://github.com/OpenSource302/unbound"

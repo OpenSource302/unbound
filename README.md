@@ -52,7 +52,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/PAYOUT.md](docs/PAYOU
 ## Quick Start
 
 ```bash
-git clone https://github.com/opensource302/unbound.git
+git clone https://github.com/OpenSource302/unbound.git
 cd unbound
 npm install
 npm run build
